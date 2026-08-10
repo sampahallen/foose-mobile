@@ -1,56 +1,75 @@
-# Welcome to your Expo app 👋
+# mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo (SDK 57) React Native app for the Foose / ThriftGH marketplace, styled with NativeWind and
+wired to the same `backend/` Express + Socket.IO API as `frontend/`. The UI is a native port of the
+web app's mobile breakpoint — same five bottom tabs, same design tokens, same API envelope.
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Getting started
 
 ```bash
-npm run reset-project
+npm install
+npm start          # Expo dev server (press a/i, or scan the QR in Expo Go)
+npm run android
+npm run ios        # macOS only
+npm run web
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+The backend must be running separately (`cd ../backend && npm run dev`, default port 5000).
 
-### Other setup steps
+### Pointing the app at the backend
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+In development you normally need **no configuration**. `src/config/env.ts` reads the Expo packager's
+`hostUri`, which is the dev machine's LAN address, and calls `http://<that host>:5000/api`. That is
+what makes a physical phone work — `localhost` on a phone means the phone itself.
 
-## Learn more
+Override when you need to (copy `.env.example` to `.env`):
 
-To learn more about developing your project with Expo, look at the following resources:
+```
+EXPO_PUBLIC_API_BASE_URL=https://api.example.com/api
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+`EXPO_PUBLIC_API_BASE_URL` must include the `/api` prefix, matching the mounts in
+`backend/src/app.js`. The Socket.IO origin is derived from it (or set `EXPO_PUBLIC_SOCKET_URL`).
+For a release build, set `expo.extra.apiBaseUrl` in `app.json` or supply the env var at build time.
 
-## Join the community
+## Checks
 
-Join our community of developers creating universal apps.
+```bash
+npm run lint       # ESLint (eslint-config-expo)
+npm run typecheck  # tsc --noEmit
+npm run ci         # both
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+There is no test suite yet.
+
+## What is in the app
+
+| Area | Screens |
+| --- | --- |
+| Tabs | Home, Browse, Community (Finspo + events), Saved, Inbox |
+| Marketplace | Listing detail, shop page, search, cart, checkout |
+| Orders | Buying list (active/history), order detail with buyer actions |
+| Social | Finspo post, event detail, chat thread |
+| Account | Login, register, profile, settings |
+
+Seller tooling (DigiShop setup, listing management, KYC, payouts, promotions, dispute reports with
+evidence upload) is intentionally **not** ported — those flows live on the web app, and the mobile
+screens link out to them rather than half-implementing them.
+
+## Structure
+
+```
+src/
+  app/            expo-router file routes; (tabs)/ holds the five bottom-tab screens
+  components/     auth/ feedback/ layout/ marketplace/ ui/
+  config/env.ts   all EXPO_PUBLIC_* access
+  constants/      roles.ts, palette.ts (hex mirror of the CSS variables)
+  context/        Auth, Cart, Messaging, Theme providers (+ their bare context modules)
+  hooks/          useApiResource, useInfiniteApiResource, useAuth, useCart, useMessaging, …
+  lib/api/        client + token storage; the only path for REST calls
+  types/api.ts    verbatim copy of frontend/src/types/api.ts
+  utils/          format, errorMessage, orderStatus, promotions, …
+  global.css      Tailwind entry + the light/dark design tokens
+```
+
+See `AGENTS.md` for the conventions that matter when changing this app.

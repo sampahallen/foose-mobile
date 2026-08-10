@@ -1,9 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Channel triplets (not hex) so Tailwind's `<alpha-value>` slot works: bg-accent/70 etc. */
 :root {
-  --font-display:
-    Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
-    Segoe UI Symbol, Noto Color Emoji;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
-  --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
-  --font-serif: Georgia, 'Times New Roman', serif;
+  --color-accent: 38 66 251;
+  --color-accent-strong: 0 38 214;
+  --color-accent-hover: 26 50 212;
+  --color-accent-light: 232 235 255;
+  --color-foose-bg: 251 248 255;
+  --color-foose-surface: 255 255 255;
+  --color-foose-surface-low: 244 242 255;
+  --color-foose-surface-mid: 238 236 251;
+  --color-foose-surface-high: 226 225 239;
+  --color-foose-text: 26 27 37;
+  --color-foose-muted: 94 95 92;
+  --color-foose-faint: 117 118 136;
+  --color-foose-border: 197 197 218;
+  --color-foose-danger: 186 26 26;
+  --color-foose-danger-bg: 255 218 214;
+  --color-foose-warning: 137 30 0;
+  --color-foose-warning-bg: 255 219 210;
+  --color-foose-success: 22 131 61;
+  --color-foose-success-bg: 223 247 231;
+}
+
+.dark:root {
+  --color-accent: 107 125 255;
+  --color-accent-strong: 138 153 255;
+  --color-accent-hover: 90 110 245;
+  --color-accent-light: 35 42 92;
+  --color-foose-bg: 18 18 24;
+  --color-foose-surface: 27 27 36;
+  --color-foose-surface-low: 35 36 48;
+  --color-foose-surface-mid: 43 44 58;
+  --color-foose-surface-high: 56 58 76;
+  --color-foose-text: 241 241 246;
+  --color-foose-muted: 180 181 196;
+  --color-foose-faint: 133 134 154;
+  --color-foose-border: 58 60 80;
+  --color-foose-danger: 255 138 128;
+  --color-foose-danger-bg: 58 26 26;
+  --color-foose-warning: 255 181 158;
+  --color-foose-warning-bg: 58 36 22;
+  --color-foose-success: 111 227 160;
+  --color-foose-success-bg: 18 58 37;
 }
