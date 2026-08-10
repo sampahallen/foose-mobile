@@ -1,4 +1,4 @@
-# mobile — working notes
+# foose-mobile — working notes
 
 Expo SDK 57 / React Native 0.86 / React 19.2 / expo-router 57 / NativeWind 4.2 (Tailwind **v3**).
 
@@ -9,6 +9,9 @@ break.
 
 This is a **fourth independent git repository** in the workspace, alongside `backend/`, `frontend/`,
 and `admin-frontend/`. Run `git` commands from inside `mobile/`.
+
+The directory is `mobile/` but the project is named **`foose-mobile`** (`package.json` `name`,
+`app.json` `slug`). That mismatch is intentional — don't "fix" one to match the other.
 
 It is a native port of `frontend/`'s mobile breakpoint against the same backend. When a shared
 concept changes, both apps must change:

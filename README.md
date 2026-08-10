@@ -1,4 +1,6 @@
-# mobile
+# foose-mobile
+
+> Lives in the `mobile/` directory; the project/package itself is named `foose-mobile`.
 
 Expo (SDK 57) React Native app for the Foose / ThriftGH marketplace, styled with NativeWind and
 wired to the same `backend/` Express + Socket.IO API as `frontend/`. The UI is a native port of the
