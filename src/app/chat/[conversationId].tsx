@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons'
-import { Image } from 'expo-image'
 import { useLocalSearchParams } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -8,21 +7,24 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  Text,
   TextInput,
   View,
 } from 'react-native'
+import { InlineNotice } from '../../components/feedback/InlineNotice'
 import { ListSkeleton } from '../../components/feedback/Skeleton'
 import { StatePanel } from '../../components/feedback/StatePanel'
 import { Screen } from '../../components/layout/Screen'
 import { TopBar } from '../../components/layout/TopBar'
+import { MessageBubble, type ThreadMessage } from '../../components/messaging/MessageBubble'
+import { OfferCard } from '../../components/messaging/OfferCard'
+import { Button } from '../../components/ui/Button'
 import { useAuth } from '../../hooks/useAuth'
+import { useBargain } from '../../hooks/useBargain'
 import { useMessaging } from '../../hooks/useMessaging'
 import { useThemeColors } from '../../hooks/useThemeColors'
 import { apiGet, apiPost } from '../../lib/api'
 import type { ChatMessage, User } from '../../types/api'
 import { getErrorMessage } from '../../utils/errorMessage'
-import { formatRelativeTime, idValue } from '../../utils/format'
 
 type ConversationPage = {
   contactVisible?: boolean
@@ -33,7 +35,7 @@ type ConversationPage = {
   total: number
 }
 
-type PendingMessage = ChatMessage & { failed?: boolean; pending?: boolean }
+type PendingMessage = ThreadMessage
 
 /**
  * Threads render newest-first in an inverted list, which matches how the backend already sorts
@@ -114,6 +116,7 @@ export default function ConversationScreen() {
   }, [messaging.messageEvent])
 
   const title = useMemo(() => participant?.name || participant?.username || 'Conversation', [participant])
+  const bargaining = useBargain(messages)
 
   async function send() {
     const content = draft.trim()
@@ -200,35 +203,34 @@ export default function ConversationScreen() {
             }}
             onEndReachedThreshold={0.4}
             renderItem={({ item }) => {
-              const mine = idValue(item.senderId) === user?._id
-              return (
-                <View className={`max-w-[82%] gap-1 ${mine ? 'self-end' : 'self-start'}`}>
-                  {item.attachments?.map((attachment) => (
-                    <Image
-                      accessibilityIgnoresInvertColors
-                      className="rounded-xl"
-                      contentFit="cover"
-                      key={attachment.url}
-                      source={{ uri: attachment.url }}
-                      style={{ height: 180, width: 180 }}
-                    />
-                  ))}
-                  {!!item.content && (
-                    <View
-                      className={`rounded-2xl px-3.5 py-2.5 ${
-                        mine ? 'bg-accent' : 'bg-foose-surface border border-foose-border'
-                      } ${item.failed ? 'opacity-60' : ''}`}
-                    >
-                      <Text className={`text-sm ${mine ? 'text-white' : 'text-foose-text'}`}>{item.content}</Text>
-                    </View>
-                  )}
-                  <Text className={`text-[10px] text-foose-faint ${mine ? 'text-right' : ''}`}>
-                    {item.failed ? 'Not delivered' : item.pending ? 'Sending…' : formatRelativeTime(item.createdAt)}
-                  </Text>
-                </View>
-              )
+              if (item.type === 'offer' && item.offer) {
+                const bargainId = typeof item.bargainId === 'string' ? item.bargainId : item.bargainId?._id
+                return (
+                  <OfferCard
+                    bargain={bargainId ? bargaining.bargains[bargainId] : undefined}
+                    busy={Boolean(bargainId) && bargaining.busyId === bargainId}
+                    currentUserId={user?._id}
+                    interactive={bargaining.isLatestOfferMessage(item._id)}
+                    message={item}
+                    onAction={(id, action, amount) => void bargaining.act(id, action, amount)}
+                  />
+                )
+              }
+              return <MessageBubble currentUserId={user?._id} message={item} />
             }}
           />
+        )}
+
+        {!!bargaining.actionError && (
+          <View className="px-3 pt-2">
+            <InlineNotice
+              action={<Button label="Dismiss" onPress={bargaining.clearActionError} size="sm" variant="ghost" />}
+              title="Bargain not updated"
+              tone="error"
+            >
+              {bargaining.actionError}
+            </InlineNotice>
+          </View>
         )}
 
         <View className="flex-row items-end gap-2 border-t border-foose-border bg-foose-surface p-3">

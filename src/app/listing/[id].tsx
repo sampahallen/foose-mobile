@@ -16,6 +16,7 @@ import { SectionHeader } from '../../components/ui/SectionHeader'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { useApiResource } from '../../hooks/useApiResource'
 import { useAuth } from '../../hooks/useAuth'
+import { useAcceptedBargainPrices } from '../../hooks/useBargain'
 import { useCart } from '../../hooks/useCart'
 import { useThemeColors } from '../../hooks/useThemeColors'
 import type { Listing } from '../../types/api'
@@ -36,6 +37,11 @@ export default function ListingScreen() {
     Boolean(shop?._id),
   )
   const [quantity, setQuantity] = useState(1)
+  // Only the caller's own bargains come back, so this can never reveal another
+  // buyer's negotiated price.
+  const bargainPrices = useAcceptedBargainPrices(Boolean(user && listing?.bargainingAllowed))
+  const agreedPrice = listing ? bargainPrices[listing._id] : undefined
+  const inCart = Boolean(listing && cart.items.some((item) => item.listingId === listing._id))
 
   if (listingResource.initialLoading) {
     return (
@@ -184,14 +190,34 @@ export default function ListingScreen() {
       </ScrollView>
 
       {!ownListing && (
-        <View className="flex-row gap-2 border-t border-foose-border bg-foose-surface p-3">
-          <Button className="flex-1" label="Message seller" onPress={messageSeller} variant="secondary" />
-          <Button
-            className="flex-1"
-            disabled={soldOut}
-            label={soldOut ? 'Sold out' : 'Add to cart'}
-            onPress={addToCart}
-          />
+        <View className="gap-2 border-t border-foose-border bg-foose-surface p-3">
+          {listing.bargainingAllowed && !soldOut && (
+            <Button
+              full
+              label={agreedPrice === undefined ? 'Make an offer' : `Your price: ${formatMoney(agreedPrice, listing.currency)}`}
+              onPress={() => router.push(`/offer/${encodeURIComponent(activeListing._id)}`)}
+              variant="secondary"
+            />
+          )}
+          <View className="flex-row gap-2">
+            <Button className="flex-1" label="Message seller" onPress={messageSeller} variant="secondary" />
+            {inCart && !soldOut ? (
+              <Button
+                className="flex-1"
+                icon={<MaterialIcons color={colors.success} name="check" size={16} />}
+                label="Added to cart"
+                onPress={() => router.push('/cart')}
+                variant="success"
+              />
+            ) : (
+              <Button
+                className="flex-1"
+                disabled={soldOut}
+                label={soldOut ? 'Sold out' : 'Add to cart'}
+                onPress={addToCart}
+              />
+            )}
+          </View>
         </View>
       )}
     </Screen>

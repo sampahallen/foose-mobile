@@ -11,6 +11,7 @@ import { Chip } from '../components/ui/Chip'
 import { Input } from '../components/ui/Input'
 import { useApiResource } from '../hooks/useApiResource'
 import { useAuth } from '../hooks/useAuth'
+import { useAcceptedBargainPrices } from '../hooks/useBargain'
 import { useCart } from '../hooks/useCart'
 import { apiPost } from '../lib/api'
 import type { Order, PaystackPaymentSession } from '../types/api'
@@ -64,6 +65,15 @@ export default function CheckoutScreen() {
   const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'cash_on_pickup'>('paystack')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  // Preview only — the server resolves the real price from the buyer's accepted
+  // bargains when the order is placed.
+  const bargainPrices = useAcceptedBargainPrices(Boolean(user) && cart.items.length > 0)
+  const bargainedSubtotal = cart.items.reduce((sum, item) => {
+    const agreed = bargainPrices[item.listingId]
+    const unitPrice = agreed === undefined ? item.price : Math.min(agreed, item.price)
+    return sum + unitPrice * item.quantity
+  }, 0)
 
   // One order is created per seller, so delivery is collected per shop group.
   const shopGroups = useMemo(() => {
@@ -209,10 +219,32 @@ export default function CheckoutScreen() {
             return (
               <View className="gap-3 rounded-xl border border-foose-border bg-foose-surface p-4" key={group.shopId}>
                 <Text className="text-sm font-black text-foose-text">{group.shopName}</Text>
-                <Text className="text-xs text-foose-muted">
-                  {group.items.length} item{group.items.length === 1 ? '' : 's'} ·{' '}
-                  {formatMoney(group.items.reduce((sum, item) => sum + item.price * item.quantity, 0))}
-                </Text>
+                {group.items.map((item) => {
+                  const agreed = bargainPrices[item.listingId]
+                  const unitPrice = agreed === undefined ? item.price : Math.min(agreed, item.price)
+                  const bargained = unitPrice < item.price
+                  return (
+                    <View className="flex-row items-start justify-between gap-3" key={item.listingId}>
+                      <Text className="min-w-0 flex-1 text-xs text-foose-muted" numberOfLines={1}>
+                        {item.title}
+                        {item.quantity > 1 ? ` × ${item.quantity}` : ''}
+                      </Text>
+                      <View className="items-end">
+                        <View className="flex-row items-baseline gap-2">
+                          {bargained && (
+                            <Text className="text-[11px] font-semibold text-foose-muted line-through">
+                              {formatMoney(item.price * item.quantity, item.currency)}
+                            </Text>
+                          )}
+                          <Text className="text-xs font-black text-foose-text">
+                            {formatMoney(unitPrice * item.quantity, item.currency)}
+                          </Text>
+                        </View>
+                        {bargained && <Text className="text-[10px] font-bold text-foose-success">Bargained price</Text>}
+                      </View>
+                    </View>
+                  )
+                })}
 
                 <View className="flex-row gap-2">
                   <Chip
@@ -295,7 +327,7 @@ export default function CheckoutScreen() {
         <View className="gap-2 border-t border-foose-border bg-foose-surface p-4">
           <View className="flex-row items-center justify-between">
             <Text className="text-sm text-foose-muted">Items subtotal</Text>
-            <Text className="text-lg font-black text-foose-text">{formatMoney(cart.subtotal)}</Text>
+            <Text className="text-lg font-black text-foose-text">{formatMoney(bargainedSubtotal)}</Text>
           </View>
           <Button
             disabled={Boolean(incompleteGroup) || !user?.isEmailVerified}

@@ -9,6 +9,7 @@ import { idValue } from '../utils/format'
 import {
   MessagingContext,
   type MessagesReadEvent,
+  type RealtimeBargainEvent,
   type RealtimeMessageEvent,
   type SendSocketMessageAck,
   type SendSocketMessagePayload,
@@ -86,6 +87,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [messageEvent, setMessageEvent] = useState<RealtimeMessageEvent | null>(null)
   const [messagesReadEvent, setMessagesReadEvent] = useState<MessagesReadEvent | null>(null)
+  const [bargainEvent, setBargainEvent] = useState<RealtimeBargainEvent | null>(null)
   const socketRef = useRef<Socket | null>(null)
 
   const refreshConversations = useCallback(async () => {
@@ -162,6 +164,11 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
       )
     }
 
+    function handleBargainUpdated(event: RealtimeBargainEvent) {
+      if (!event?.bargain || !event.conversationId) return
+      setBargainEvent({ ...event })
+    }
+
     function handleNotification(notification: Notification) {
       if (notification.type === 'chat') return
       setNotifications((current) => upsertNotification(current, notification))
@@ -191,6 +198,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
       nextSocket.on('new-message', handleNewMessage)
       nextSocket.on('message-confirmed', handleNewMessage)
       nextSocket.on('messages-read', handleMessagesRead)
+      nextSocket.on('bargain-updated', handleBargainUpdated)
     }
     nextSocket.on('notification', handleNotification)
     nextSocket.on('new-notification', handleNotification)
@@ -247,6 +255,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
+      bargainEvent,
       connected,
       conversations,
       conversationsError,
@@ -265,6 +274,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
       unreadNotificationCount: notifications.filter((notification) => !notification.isRead).length,
     }),
     [
+      bargainEvent,
       connected,
       conversations,
       conversationsError,

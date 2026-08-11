@@ -1,6 +1,7 @@
+import type { ReactNode } from 'react'
 import { ActivityIndicator, Pressable, Text, type PressableProps } from 'react-native'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success'
 type Size = 'sm' | 'md'
 
 const containerVariants: Record<Variant, string> = {
@@ -8,6 +9,7 @@ const containerVariants: Record<Variant, string> = {
   secondary: 'bg-foose-surface border-foose-border',
   ghost: 'bg-transparent border-transparent',
   danger: 'bg-foose-danger-bg border-foose-danger-bg',
+  success: 'bg-foose-success-bg border-foose-success',
 }
 
 const labelVariants: Record<Variant, string> = {
@@ -15,6 +17,7 @@ const labelVariants: Record<Variant, string> = {
   secondary: 'text-foose-text',
   ghost: 'text-accent',
   danger: 'text-foose-danger',
+  success: 'text-foose-success',
 }
 
 const sizes: Record<Size, string> = {
@@ -31,6 +34,7 @@ export function Button({
   className = '',
   disabled,
   full = false,
+  icon,
   label,
   loading = false,
   size = 'md',
@@ -39,6 +43,8 @@ export function Button({
 }: PressableProps & {
   className?: string
   full?: boolean
+  /** Optional leading glyph, rendered before the label. */
+  icon?: ReactNode
   label: string
   loading?: boolean
   size?: Size
@@ -57,6 +63,7 @@ export function Button({
       {...props}
     >
       {loading && <ActivityIndicator color={variant === 'primary' && !inactive ? '#ffffff' : '#757688'} size="small" />}
+      {!loading && icon}
       <Text
         className={`font-bold ${labelSizes[size]} ${inactive ? 'text-foose-faint' : labelVariants[variant]}`}
         numberOfLines={1}

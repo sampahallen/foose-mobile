@@ -1,8 +1,19 @@
 import { createContext } from 'react'
-import type { ChatConversation, ChatMessage, Notification } from '../types/api'
+import type { Bargain, ChatConversation, ChatMessage, Notification } from '../types/api'
 
 export type RealtimeMessageEvent = {
   clientMessageId?: string
+  conversationId: string
+  message: ChatMessage
+}
+
+/**
+ * Emitted alongside `new-message` whenever a negotiation moves. The message
+ * alone draws the card; this carries the live state that decides which buttons
+ * are still available.
+ */
+export type RealtimeBargainEvent = {
+  bargain: Bargain
   conversationId: string
   message: ChatMessage
 }
@@ -30,6 +41,7 @@ export type SendSocketMessageAck = {
 }
 
 export type MessagingContextValue = {
+  bargainEvent: RealtimeBargainEvent | null
   connected: boolean
   conversations: ChatConversation[]
   conversationsError: string

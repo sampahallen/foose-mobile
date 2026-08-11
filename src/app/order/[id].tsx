@@ -18,6 +18,7 @@ import {
   buyerOrderActions,
   deliveryMethodLabel,
   orderAddress,
+  orderDeliveryFee,
   orderProgressLabel,
   orderSettlementLabel,
   orderStatusTone,
@@ -82,6 +83,7 @@ export default function OrderDetailScreen() {
 
   const actions = buyerOrderActions(order)
   const address = orderAddress(order)
+  const deliveryFeeAmount = orderDeliveryFee(order)
 
   return (
     <Screen edges={['top', 'bottom']}>
@@ -122,10 +124,12 @@ export default function OrderDetailScreen() {
                 <Text className="text-xs text-foose-text">{formatMoney(order.subtotalAmount, order.currency)}</Text>
               </View>
             )}
-            {!!order.deliveryFee && (
+            {deliveryFeeAmount !== 0 && (
               <View className="flex-row justify-between">
                 <Text className="text-xs text-foose-muted">Delivery</Text>
-                <Text className="text-xs text-foose-text">{formatMoney(order.deliveryFee, order.currency)}</Text>
+                <Text className="text-xs text-foose-text">
+                  {deliveryFeeAmount === null ? 'TBD' : formatMoney(deliveryFeeAmount, order.currency)}
+                </Text>
               </View>
             )}
             <View className="flex-row justify-between">
@@ -139,8 +143,8 @@ export default function OrderDetailScreen() {
           <Text className="text-sm font-black text-foose-text">{deliveryMethodLabel(order.delivery?.method)}</Text>
           {!!order.delivery?.company && <Text className="text-xs text-foose-muted">{order.delivery.company}</Text>}
           {!!address && <Text className="text-xs text-foose-muted">{address}</Text>}
-          {!!order.delivery?.transit?.parcelNumber && (
-            <Text className="text-xs text-foose-muted">Parcel {order.delivery.transit.parcelNumber}</Text>
+          {!!order.delivery?.transit?.busNumber && (
+            <Text className="text-xs text-foose-muted">Bus {order.delivery.transit.busNumber}</Text>
           )}
           {!!order.delivery?.transit?.driverPhone && (
             <Text className="text-xs text-foose-muted">Driver {order.delivery.transit.driverPhone}</Text>

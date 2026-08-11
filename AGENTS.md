@@ -83,6 +83,13 @@ notification room is always joined. Sending prefers the socket (`send-message`) 
 `POST /chat`. Conversation messages come back newest-first, which is why threads use an `inverted`
 FlatList with no reversing.
 
+Bargaining rides the same stream: offer rounds arrive as `new-message` with `type: 'offer'` and an
+immutable `offer` snapshot, so the thread renders `components/messaging/OfferCard` for them and
+`MessageBubble` for everything else. `bargain-updated` carries `allowedActions` scoped to the viewer.
+Because the list is newest-first, `useBargain` treats the *first* offer message it sees per bargain as
+the interactive one. The offer composer is a real screen (`src/app/offer/[listingId].tsx`) since there
+is no sheet or money-input primitive.
+
 ## Deliberately not ported
 
 DigiShop setup, listing create/edit, KYC, payouts/wallet ledger, promotions checkout, event

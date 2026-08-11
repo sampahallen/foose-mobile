@@ -23,6 +23,20 @@ export function deliveryMethodLabel(method?: NonNullable<Order['delivery']>['met
   }
 }
 
+/**
+ * The delivery fee in pesewas, resolved from wherever it was recorded — a
+ * checkout-time snapshot, or the transit amount the seller entered while
+ * dispatching a station-pickup order (web-only; sellers dispatch from the web
+ * app). `null` means genuinely unknown yet; `0` means no fee applies. Render
+ * `null` as "TBD" and `0` as "Free" (or hide the row) — never guess a fee from
+ * the method alone.
+ */
+export function orderDeliveryFee(order: Pick<Order, 'delivery' | 'deliveryFee'>): number | null {
+  const known = order.deliveryFee || order.delivery?.fee || order.delivery?.transit?.amount
+  if (known) return known
+  return order.delivery?.method === 'station_pickup' ? null : 0
+}
+
 export function orderAddress(order: Pick<Order, 'delivery'>) {
   const destination = order.delivery?.destination
   if (destination) {
