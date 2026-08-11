@@ -1,18 +1,20 @@
+import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import { useMemo, useState } from 'react'
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native'
 import { InlineNotice } from '../components/feedback/InlineNotice'
 import { StatePanel } from '../components/feedback/StatePanel'
 import { Screen } from '../components/layout/Screen'
 import { TopBar } from '../components/layout/TopBar'
 import { Button } from '../components/ui/Button'
-import { Chip } from '../components/ui/Chip'
+import { Dropdown } from '../components/ui/Dropdown'
 import { Input } from '../components/ui/Input'
 import { useApiResource } from '../hooks/useApiResource'
 import { useAuth } from '../hooks/useAuth'
 import { useAcceptedBargainPrices } from '../hooks/useBargain'
 import { useCart } from '../hooks/useCart'
+import { useThemeColors } from '../hooks/useThemeColors'
 import { apiPost } from '../lib/api'
 import type { Order, PaystackPaymentSession } from '../types/api'
 import { getErrorMessage } from '../utils/errorMessage'
@@ -61,6 +63,7 @@ function emptyDelivery(): ShopDeliveryState {
 export default function CheckoutScreen() {
   const cart = useCart()
   const { user } = useAuth()
+  const colors = useThemeColors()
   const [deliveryByShop, setDeliveryByShop] = useState<Record<string, ShopDeliveryState>>({})
   const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'cash_on_pickup'>('paystack')
   const [error, setError] = useState('')
@@ -212,13 +215,26 @@ export default function CheckoutScreen() {
 
           {!!error && <InlineNotice title="Checkout failed" tone="error">{error}</InlineNotice>}
 
-          {shopGroups.map((group) => {
+          {shopGroups.map((group, groupIndex) => {
             const state = deliveryFor(group.shopId)
             const shopOption = options.data?.shops.find((shop) => shop.shopId === group.shopId)
 
             return (
               <View className="gap-3 rounded-xl border border-foose-border bg-foose-surface p-4" key={group.shopId}>
-                <Text className="text-sm font-black text-foose-text">{group.shopName}</Text>
+                <View className="flex-row items-center gap-2.5 border-b border-foose-border pb-3">
+                  <View className="size-8 items-center justify-center rounded-lg bg-accent-light">
+                    <Ionicons color={colors.accent} name="storefront-outline" size={16} />
+                  </View>
+                  <View className="min-w-0 flex-1">
+                    <Text className="text-sm font-black text-foose-text" numberOfLines={1}>
+                      {group.shopName}
+                      {!!shopOption?.location.city && ` · ${shopOption.location.city}, ${shopOption.location.region}`}
+                    </Text>
+                    <Text className="text-xs text-foose-muted">
+                      Seller {groupIndex + 1} of {shopGroups.length} · {group.items.length} {group.items.length === 1 ? 'item' : 'items'}
+                    </Text>
+                  </View>
+                </View>
                 {group.items.map((item) => {
                   const agreed = bargainPrices[item.listingId]
                   const unitPrice = agreed === undefined ? item.price : Math.min(agreed, item.price)
@@ -242,22 +258,27 @@ export default function CheckoutScreen() {
                         </View>
                         {bargained && <Text className="text-[10px] font-bold text-foose-success">Bargained price</Text>}
                       </View>
+                      <Pressable
+                        accessibilityLabel={`Remove ${item.title} from checkout`}
+                        accessibilityRole="button"
+                        hitSlop={8}
+                        onPress={() => cart.removeItem(item.listingId)}
+                      >
+                        <Text className="text-[11px] font-black text-foose-danger">Remove</Text>
+                      </Pressable>
                     </View>
                   )
                 })}
 
-                <View className="flex-row gap-2">
-                  <Chip
-                    active={state.method === 'station_pickup'}
-                    label="Bus station"
-                    onPress={() => updateDelivery(group.shopId, { method: 'station_pickup' })}
-                  />
-                  <Chip
-                    active={state.method === 'shop_pickup'}
-                    label="Pick up at shop"
-                    onPress={() => updateDelivery(group.shopId, { method: 'shop_pickup' })}
-                  />
-                </View>
+                <Dropdown<DeliveryMethod>
+                  label="Delivery method"
+                  onChange={(nextMethod) => updateDelivery(group.shopId, { method: nextMethod })}
+                  options={[
+                    { label: 'Bus station', value: 'station_pickup' },
+                    { label: 'Pick up at shop', value: 'shop_pickup' },
+                  ]}
+                  value={state.method}
+                />
 
                 {state.method === 'shop_pickup' ? (
                   <Text className="text-xs text-foose-muted">
@@ -266,16 +287,12 @@ export default function CheckoutScreen() {
                   </Text>
                 ) : (
                   <View className="gap-3">
-                    <View className="flex-row flex-wrap gap-2">
-                      {STATION_COMPANIES.map((company) => (
-                        <Chip
-                          active={state.company === company}
-                          key={company}
-                          label={company}
-                          onPress={() => updateDelivery(group.shopId, { company })}
-                        />
-                      ))}
-                    </View>
+                    <Dropdown
+                      label="Station company"
+                      onChange={(company) => updateDelivery(group.shopId, { company })}
+                      options={STATION_COMPANIES.map((company) => ({ label: company, value: company }))}
+                      value={state.company}
+                    />
                     <Input
                       label="Recipient name"
                       onChangeText={(value) => updateDelivery(group.shopId, { recipientName: value })}
@@ -312,14 +329,14 @@ export default function CheckoutScreen() {
           {allShopPickup && (
             <View className="gap-2 rounded-xl border border-foose-border bg-foose-surface p-4">
               <Text className="text-sm font-black text-foose-text">Payment</Text>
-              <View className="flex-row gap-2">
-                <Chip active={paymentMethod === 'paystack'} label="Pay online" onPress={() => setPaymentMethod('paystack')} />
-                <Chip
-                  active={paymentMethod === 'cash_on_pickup'}
-                  label="Cash on pickup"
-                  onPress={() => setPaymentMethod('cash_on_pickup')}
-                />
-              </View>
+              <Dropdown<'cash_on_pickup' | 'paystack'>
+                onChange={setPaymentMethod}
+                options={[
+                  { label: 'Pay online', value: 'paystack' },
+                  { label: 'Cash on pickup', value: 'cash_on_pickup' },
+                ]}
+                value={paymentMethod}
+              />
             </View>
           )}
         </ScrollView>
