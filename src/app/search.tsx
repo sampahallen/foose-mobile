@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native'
 import { StatePanel } from '../components/feedback/StatePanel'
@@ -9,6 +9,14 @@ import { useThemeColors } from '../hooks/useThemeColors'
 import { apiGet } from '../lib/api'
 import type { PopularSearch, UnifiedSearchSuggestion } from '../types/api'
 import { useApiResource } from '../hooks/useApiResource'
+
+// Mirrors web's `SUGGESTION_FILTERS` (`frontend/src/components/search/BrowseSearchCombobox.tsx`) — the
+// active marketplace filters browse.tsx passes as route params when it links here, forwarded into the
+// suggestions call so results stay scoped to what the user was already filtering by.
+const SUGGESTION_FILTER_KEYS = [
+  'type', 'category', 'subcategory', 'brand', 'condition', 'color', 'gender',
+  'size', 'minPrice', 'maxPrice', 'location', 'material', 'fit', 'pattern', 'baleGrade',
+] as const
 
 /** Routes a suggestion to the screen that owns that entity type. */
 function openSuggestion(suggestion: UnifiedSearchSuggestion) {
@@ -35,6 +43,7 @@ function openSuggestion(suggestion: UnifiedSearchSuggestion) {
 
 export default function SearchScreen() {
   const colors = useThemeColors()
+  const filterParams = useLocalSearchParams<Partial<Record<(typeof SUGGESTION_FILTER_KEYS)[number], string>>>()
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<UnifiedSearchSuggestion[]>([])
   const [loading, setLoading] = useState(false)
@@ -55,10 +64,12 @@ export default function SearchScreen() {
     queueMicrotask(() => setLoading(true))
     const controller = new AbortController()
     const timer = setTimeout(() => {
-      apiGet<{ suggestions: UnifiedSearchSuggestion[] }>(
-        `/search/suggestions?q=${encodeURIComponent(trimmed)}&limit=12`,
-        { signal: controller.signal },
-      )
+      const search = new URLSearchParams({ limit: '12', q: trimmed })
+      for (const key of SUGGESTION_FILTER_KEYS) {
+        const value = filterParams[key]
+        if (typeof value === 'string' && value) search.set(key, value)
+      }
+      apiGet<{ suggestions: UnifiedSearchSuggestion[] }>(`/search/suggestions?${search.toString()}`, { signal: controller.signal })
         .then((data) => setSuggestions(data.suggestions || []))
         .catch(() => undefined)
         .finally(() => setLoading(false))
@@ -68,10 +79,13 @@ export default function SearchScreen() {
       clearTimeout(timer)
       controller.abort()
     }
+    // `filterParams` come from the route and are fixed for the life of this screen; the debounce
+    // itself should only re-run when the typed query changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query])
 
   return (
-    <Screen edges={['top', 'bottom']}>
+    <Screen edges={['top', 'bottom']} topInsetClassName="bg-foose-surface">
       <View className="flex-row items-center gap-2 border-b border-foose-border bg-foose-surface px-4 py-3">
         <Pressable
           accessibilityLabel="Go back"

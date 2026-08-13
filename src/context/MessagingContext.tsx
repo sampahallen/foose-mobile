@@ -270,8 +270,13 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
       refreshConversations,
       refreshNotifications,
       sendSocketMessage: connected ? sendSocketMessage : null,
-      unreadMessageCount: conversations.reduce((sum, conversation) => sum + (conversation.unreadCount || 0), 0),
-      unreadNotificationCount: notifications.filter((notification) => !notification.isRead).length,
+      unreadMessageCount: conversations.reduce(
+        (sum, conversation) => sum + (conversation.unreadCount || 0) + (conversation.unreadReactionCount || 0),
+        0,
+      ),
+      unreadNotificationCount: notifications.filter(
+        (notification) => notification.type !== 'chat' && !notification.isRead,
+      ).length,
     }),
     [
       bargainEvent,

@@ -24,7 +24,7 @@ export default function CartScreen() {
     <Screen edges={['top', 'bottom']}>
       <TopBar
         action={
-          cart.items.length ? <Button label="Clear" onPress={cart.clearCart} size="sm" variant="ghost" /> : undefined
+          cart.items.length ? <Button label="Clear" onPress={cart.clearCart} size="sm" variant="secondary" /> : undefined
         }
         showBack
         showCart={false}

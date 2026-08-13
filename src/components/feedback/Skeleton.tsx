@@ -4,10 +4,14 @@ export function SkeletonBlock({ className = '' }: { className?: string }) {
   return <View className={`rounded-lg bg-foose-surface-mid ${className}`} />
 }
 
-/** Matches the 2-up product grid so the swap from skeleton to data does not shift layout. */
-export function ProductGridSkeleton({ count = 6 }: { count?: number }) {
+/**
+ * Matches the 2-up product grid so the swap from skeleton to data does not shift layout.
+ * `label` mirrors web's `ProductGridSkeleton` (`frontend/src/components/feedback/DiscoverySkeletons.tsx`)
+ * screen-reader announcement — it's not rendered visibly there either, just exposed to assistive tech.
+ */
+export function ProductGridSkeleton({ count = 6, label = 'Loading listings' }: { count?: number; label?: string }) {
   return (
-    <View className="flex-row flex-wrap justify-between gap-y-5">
+    <View accessibilityLabel={label} accessibilityLiveRegion="polite" accessibilityRole="progressbar" className="flex-row flex-wrap justify-between gap-y-5">
       {Array.from({ length: count }).map((_, index) => (
         <View className="w-[48%] gap-2" key={index}>
           <SkeletonBlock className="aspect-[4/5] w-full" />
