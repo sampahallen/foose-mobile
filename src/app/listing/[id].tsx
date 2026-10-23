@@ -22,6 +22,7 @@ import { useThemeColors } from '../../hooks/useThemeColors'
 import type { Listing } from '../../types/api'
 import { formatMoney, getShop, listingMeta } from '../../utils/format'
 import { isOwnListing } from '../../utils/listingOwnership'
+import { LISTING_COLORS } from '../../utils/listingTaxonomy'
 
 export default function ListingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -75,6 +76,7 @@ export default function ListingScreen() {
   const ownListing = isOwnListing(listing, user)
   const soldOut = listing.status === 'sold' || (listing.quantity !== undefined && listing.quantity <= 0)
   const relatedListings = (related.data?.listings || []).filter((item) => item._id !== listing._id)
+  const listingColorValues = listing.colors?.length ? listing.colors : listing.color ? [listing.color] : []
 
   // Narrowed above; captured so the callbacks below do not re-widen it to `Listing | undefined`.
   const activeListing: Listing = listing
@@ -116,6 +118,23 @@ export default function ListingScreen() {
           <Text className="text-xl font-bold text-foose-text">{listing.title}</Text>
           <Text className="text-2xl font-black text-accent">{formatMoney(listing.price, listing.currency)}</Text>
           <Text className="text-xs text-foose-muted">{listingMeta(listing)}</Text>
+
+          {listingColorValues.length > 0 && (
+            <View className="gap-1.5" accessibilityLabel="Listing colors">
+              <Text className="text-xs font-semibold text-foose-muted">Colors</Text>
+              <View className="flex-row flex-wrap gap-2">
+                {listingColorValues.map((value) => {
+                  const color = LISTING_COLORS.find((item) => item.value === value)
+                  return (
+                    <View className="flex-row items-center gap-1.5 rounded-full border border-foose-border bg-foose-surface px-2.5 py-1.5" key={value}>
+                      <View className="size-3.5 rounded-full border border-foose-border" style={{ backgroundColor: value === 'multi' ? '#8a5cf6' : value === 'silver' ? '#c0c0c0' : color?.hex }} />
+                      <Text className="text-xs font-bold text-foose-text">{color?.label || value}</Text>
+                    </View>
+                  )
+                })}
+              </View>
+            </View>
+          )}
 
           {isWholesale && (
             <Text className="text-xs text-foose-muted">
